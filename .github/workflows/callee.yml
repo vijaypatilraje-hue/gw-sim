@@ -1,0 +1,30 @@
+name: callee (mirrors gw)
+
+on:
+  workflow_call:
+    secrets:
+      TEST_SECRET:
+        required: true
+
+jobs:
+  receive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm secret received in gw-sim context
+        env:
+          S: ${{ secrets.TEST_SECRET }}
+        run: |
+          echo "Secret received in gw-sim (Repo B)"
+          echo "Secret length: ${#S} chars"
+          echo "Hash: $(echo -n "$S" | sha256sum)"
+          mkdir -p /tmp/proof
+          echo "SECRET_RECEIVED_IN_GW_SIM=true" > /tmp/proof/boundary_cross.txt
+          echo "HASH=$(echo -n "$S" | sha256sum | cut -d' ' -f1)" >> /tmp/proof/boundary_cross.txt
+          echo "TIMESTAMP=$(date -u)" >> /tmp/proof/boundary_cross.txt
+          echo "TRIGGERED_FROM=${{ github.repository }}" >> /tmp/proof/boundary_cross.txt
+          cat /tmp/proof/boundary_cross.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boundary-cross-proof
+          path: /tmp/proof/boundary_cross.txt
